@@ -1,12 +1,13 @@
 use std::cmp::Ordering;
-use crate::heap::Heap;
+use std::fmt::{Debug};
+use crate::heap::{Heap, levels_from_len};
 
 /// 최대 힙이란 힙 루트가 가장 값이 큰 자료구조이다.
-pub struct MaxHeap<T: Ord+Clone> {
+pub struct MaxHeap<T: Ord+Clone+Debug> {
     item: Vec<T>
 }
 
-impl<T: Ord+Clone> MaxHeap<T> {
+impl<T: Ord+Clone+Debug> MaxHeap<T> {
     /// heapify 매개변수 root가 전체 heap에서 자신의 자리를 찾아가도록 하는 연산입니다.
     /// 만약 root의 모든 하위자식들이 heapify를 수행해서 root 미만 Heap 노드 전체가 안정되었다면,
     /// root의 heapify 연산 결과는 root 이하 Heap 노드 전체가 안정됨을 보장할 수 있습니다.
@@ -56,7 +57,7 @@ impl<T: Ord+Clone> MaxHeap<T> {
     }
 }
 
-impl<T: Ord+Clone> Heap for MaxHeap<T> {
+impl<T: Ord+Clone+Debug> Heap for MaxHeap<T> {
     type Item = T;
 
     fn new() -> Self
@@ -123,5 +124,37 @@ impl<T: Ord+Clone> Heap for MaxHeap<T> {
 
     fn clear(&mut self) {
         self.item.clear();
+    }
+
+    fn from_vec(vec: Vec<Self::Item>) -> Self
+    where
+        Self: Sized
+    {
+        let mut init = Self::new();
+        init.item = vec;
+        for i in (0..init.item.len()).rev() {
+            init.heapify(i);
+        }
+        init
+    }
+
+    fn tree_view(&self) {
+        let mut result = String::new();
+        let len = self.len();
+        if len == 0 {
+            return;
+        }
+        
+        let level = levels_from_len(len);
+        for i in 0..level {
+            let start = (1usize << i) - 1;
+            let end = ((1usize << (i + 1)) - 2).min(len.saturating_sub(1));
+            result += "L{i}: ";
+            for i in start..=end {
+                result += format!("{:?} ", self.item[i]).as_str();
+            }
+            result += "\n";
+        }
+        println!("{result}")
     }
 }

@@ -4,6 +4,7 @@ mod minheap;
 pub use minheap::MinHeap;
 
 use std::cmp::*;
+use std::fmt::Debug;
 
 /// # Heap
 /// Heap은 다음 속성을 만족하는 완전이진트리이다.
@@ -12,7 +13,7 @@ use std::cmp::*;
 /// * 힙에는 두가지 종류가 있으며, 부모노드의 값이 자식노드의 값보다 항상 큰 힙을 **최대 힙,** 부모노드의 값이 자식노드의 값보다 항상 작은 힙을 **최소 힙**이라고 부른다.
 /// * 값의 대소관계는 오로지 부모노드와 자식노드 간에만 성립하며, 특히 형제 사이에는 대소관계가 정해지지 않는다.
 pub trait Heap {
-    type Item: Ord+Clone;
+    type Item: Ord+Clone+Debug;
 
     /// 비어있는 힙 생성
     fn new() -> Self where Self: Sized;
@@ -36,6 +37,20 @@ pub trait Heap {
 
     /// 모두 제거
     fn clear(&mut self);
+
+    /// 기존 Vec을 heap으로 만들기
+    fn from_vec(vec: Vec<Self::Item>) -> Self where Self: Sized;
+
+    /// heap tree 구조를 시각적으로 출력
+    fn tree_view(&self);
+}
+
+pub fn levels_from_len(n: usize) -> usize {
+    if n == 0 {
+        0
+    } else {
+        n.ilog2() as usize + 1
+    }
 }
 
 #[cfg(test)]
@@ -179,32 +194,32 @@ mod tests {
     }
 
     // 다양한 입력 크기에 대해 힙 성질을 간단히 체크
-    // #[test]
-    // fn many_elements_shape_check() {
-    //     let mut maxh: MaxHeap<i32> = MaxHeap::with_capacity(1024);
-    //     let mut minh: MinHeap<i32> = MinHeap::with_capacity(1024);
-    //
-    //     for i in 0..1000 {
-    //         let v = (i * 37) % 997; // 다양한 값
-    //         maxh.push(v as i32);
-    //         minh.push(v as i32);
-    //     }
-    //     assert_eq!(maxh.len(), 1000);
-    //     assert_eq!(minh.len(), 1000);
-    //
-    //     // Max는 내림차순, Min은 오름차순으로 모두 꺼내졌는지
-    //     let mut max_out = Vec::new();
-    //     let mut min_out = Vec::new();
-    //     while let Some(x) = maxh.pop() { max_out.push(x); }
-    //     while let Some(x) = minh.pop() { min_out.push(x); }
-    //
-    //     let mut sorted: Vec<i32> = (0..1000).map(|i| ((i * 37) % 997) as i32).collect();
-    //     sorted.sort();
-    //
-    //     let mut sorted_desc = sorted.clone();
-    //     sorted_desc.reverse();
-    //
-    //     assert_eq!(max_out, sorted_desc);
-    //     assert_eq!(min_out, sorted);
-    // }
+    #[test]
+    fn many_elements_shape_check() {
+        let mut maxh: MaxHeap<i32> = MaxHeap::new();
+        let mut minh: MinHeap<i32> = MinHeap::new();
+
+        for i in 0..1000 {
+            let v = (i * 37) % 997; // 다양한 값
+            maxh.push(v as i32);
+            minh.push(v as i32);
+        }
+        assert_eq!(maxh.len(), 1000);
+        assert_eq!(minh.len(), 1000);
+
+        // Max는 내림차순, Min은 오름차순으로 모두 꺼내졌는지
+        let mut max_out = Vec::new();
+        let mut min_out = Vec::new();
+        while let Some(x) = maxh.pop() { max_out.push(x); }
+        while let Some(x) = minh.pop() { min_out.push(x); }
+
+        let mut sorted: Vec<i32> = (0..1000).map(|i| ((i * 37) % 997) as i32).collect();
+        sorted.sort();
+
+        let mut sorted_desc = sorted.clone();
+        sorted_desc.reverse();
+
+        assert_eq!(max_out, sorted_desc);
+        assert_eq!(min_out, sorted);
+    }
 }
