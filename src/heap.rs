@@ -13,10 +13,12 @@ use std::fmt::Debug;
 /// * 힙에는 두가지 종류가 있으며, 부모노드의 값이 자식노드의 값보다 항상 큰 힙을 **최대 힙,** 부모노드의 값이 자식노드의 값보다 항상 작은 힙을 **최소 힙**이라고 부른다.
 /// * 값의 대소관계는 오로지 부모노드와 자식노드 간에만 성립하며, 특히 형제 사이에는 대소관계가 정해지지 않는다.
 pub trait Heap {
-    type Item: Ord+Clone+Debug;
+    type Item: Ord + Clone + Debug;
 
     /// 비어있는 힙 생성
-    fn new() -> Self where Self: Sized;
+    fn new() -> Self
+    where
+        Self: Sized;
 
     /// 원소 추가
     fn push(&mut self, item: Self::Item);
@@ -39,18 +41,16 @@ pub trait Heap {
     fn clear(&mut self);
 
     /// 기존 Vec을 heap으로 만들기
-    fn from_vec(vec: Vec<Self::Item>) -> Self where Self: Sized;
+    fn from_vec(vec: Vec<Self::Item>) -> Self
+    where
+        Self: Sized;
 
     /// heap tree 구조를 시각적으로 출력
     fn tree_view(&self);
 }
 
 pub fn levels_from_len(n: usize) -> usize {
-    if n == 0 {
-        0
-    } else {
-        n.ilog2() as usize + 1
-    }
+    if n == 0 { 0 } else { n.ilog2() as usize + 1 }
 }
 
 #[cfg(test)]
@@ -61,8 +61,8 @@ mod tests {
     fn run_basic_suite<H>(is_min_heap: bool)
     where
         H: Heap<Item = i32>,
-    // new()를 호출해 비어있는 힙을 만들 수 있어야 함
-    // (네 구현에서 new()가 없다면 Heap::new()는 필수)
+        // new()를 호출해 비어있는 힙을 만들 수 있어야 함
+        // (네 구현에서 new()가 없다면 Heap::new()는 필수)
     {
         // 빈 상태
         let mut h = H::new();
@@ -80,7 +80,11 @@ mod tests {
 
         // peek 확인: min-heap이면 최소값(=1), max-heap이면 최대값(=9)
         let top = h.peek().expect("peek must exist");
-        if is_min_heap { assert_eq!(top, 1); } else { assert_eq!(top, 9); }
+        if is_min_heap {
+            assert_eq!(top, 1);
+        } else {
+            assert_eq!(top, 9);
+        }
 
         // pop 순서가 올바른지 확인
         let mut popped = Vec::new();
@@ -91,20 +95,22 @@ mod tests {
         assert_eq!(h.len(), 0);
 
         // 정답 시퀀스 생성
-        let mut sorted = vec![3,1,4,1,5,9,2,6,5];
+        let mut sorted = vec![3, 1, 4, 1, 5, 9, 2, 6, 5];
         sorted.sort();
         let expected = if is_min_heap {
-            sorted.clone()                   // 오름차순
+            sorted.clone() // 오름차순
         } else {
             let mut r = sorted.clone();
-            r.reverse();                     // 내림차순
+            r.reverse(); // 내림차순
             r
         };
         assert_eq!(popped, expected);
 
         // clear 동작 확인
         let mut h2 = H::new();
-        for &x in &[10, 20, 20, -1] { h2.push(x); }
+        for &x in &[10, 20, 20, -1] {
+            h2.push(x);
+        }
         h2.clear();
         assert!(h2.is_empty());
         assert_eq!(h2.peek(), None);
@@ -124,12 +130,15 @@ mod tests {
 
         // 전부 pop해서 수집
         let mut out = Vec::new();
-        while let Some(s) = h.pop() { out.push(s); }
+        while let Some(s) = h.pop() {
+            out.push(s);
+        }
 
         // 이 함수는 "H가 MinHeap인지 MaxHeap인지"를 모르므로
         // 그냥 정렬해 두 케이스 중 하나와 일치하는지만 본다.
-        let mut asc = vec!["alpha","bravo","charlie","delta"];
-        let mut desc = asc.clone(); desc.reverse();
+        let mut asc = vec!["alpha", "bravo", "charlie", "delta"];
+        let mut desc = asc.clone();
+        desc.reverse();
         assert!(out == asc || out == desc);
     }
 
@@ -157,8 +166,12 @@ mod tests {
             assert_eq!(h.pop(), Some(42));
             assert_eq!(h.pop(), None);
 
-            for _ in 0..5 { h.push(7); }
-            for _ in 0..5 { assert_eq!(h.pop(), Some(7)); }
+            for _ in 0..5 {
+                h.push(7);
+            }
+            for _ in 0..5 {
+                assert_eq!(h.pop(), Some(7));
+            }
             assert!(h.is_empty());
         }
         // MinHeap
@@ -169,8 +182,12 @@ mod tests {
             assert_eq!(h.pop(), Some(42));
             assert_eq!(h.pop(), None);
 
-            for _ in 0..5 { h.push(7); }
-            for _ in 0..5 { assert_eq!(h.pop(), Some(7)); }
+            for _ in 0..5 {
+                h.push(7);
+            }
+            for _ in 0..5 {
+                assert_eq!(h.pop(), Some(7));
+            }
             assert!(h.is_empty());
         }
     }
@@ -180,7 +197,10 @@ mod tests {
     fn peek_is_non_destructive() {
         let mut maxh: MaxHeap<i32> = MaxHeap::new();
         let mut minh: MinHeap<i32> = MinHeap::new();
-        for &x in &[2,8,3,8] { maxh.push(x); minh.push(x); }
+        for &x in &[2, 8, 3, 8] {
+            maxh.push(x);
+            minh.push(x);
+        }
 
         assert_eq!(maxh.peek(), Some(8));
         assert_eq!(maxh.len(), 4);
@@ -210,8 +230,12 @@ mod tests {
         // Max는 내림차순, Min은 오름차순으로 모두 꺼내졌는지
         let mut max_out = Vec::new();
         let mut min_out = Vec::new();
-        while let Some(x) = maxh.pop() { max_out.push(x); }
-        while let Some(x) = minh.pop() { min_out.push(x); }
+        while let Some(x) = maxh.pop() {
+            max_out.push(x);
+        }
+        while let Some(x) = minh.pop() {
+            min_out.push(x);
+        }
 
         let mut sorted: Vec<i32> = (0..1000).map(|i| ((i * 37) % 997) as i32).collect();
         sorted.sort();

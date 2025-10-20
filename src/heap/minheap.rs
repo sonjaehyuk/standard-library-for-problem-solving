@@ -1,13 +1,14 @@
+#![allow(clippy::doc_lazy_continuation)]
+use crate::heap::{Heap, levels_from_len};
 use std::cmp::Ordering;
 use std::fmt::Debug;
-use crate::heap::{levels_from_len, Heap};
 
 /// 최대 힙이란 힙 루트가 가장 값이 큰 자료구조이다.
-pub struct MinHeap<T: Ord+Clone> {
-    item: Vec<T>
+pub struct MinHeap<T: Ord + Clone> {
+    item: Vec<T>,
 }
 
-impl<T: Ord+Clone+Debug> MinHeap<T> {
+impl<T: Ord + Clone + Debug> MinHeap<T> {
     /// heapify 매개변수 root가 전체 heap에서 자신의 자리를 찾아가도록 하는 연산입니다.
     /// 만약 root의 모든 하위자식들이 heapify를 수행해서 root 미만 Heap 노드 전체가 안정되었다면,
     /// root의 heapify 연산 결과는 root 이하 Heap 노드 전체가 안정됨을 보장할 수 있습니다.
@@ -27,42 +28,40 @@ impl<T: Ord+Clone+Debug> MinHeap<T> {
         loop {
             let left_child_index = 2 * current_index + 1;
             let right_child_index = 2 * current_index + 2;
-            if left_child_index >= len { // current_index가 leaf인 상황
+            if left_child_index >= len {
+                // current_index가 leaf인 상황
                 break;
             }
-            let max_child_index: usize = (|l: usize, r: usize| {
-                if r < len {
-                    match self.item[r].cmp(&self.item[l]) {
-                        // Equal은 어디에 가든 상관없음.
-                        Ordering::Less | Ordering::Equal => r,
-                        Ordering::Greater => l,
-                    }
-                } else { // 오른쪽 자식은 없는 상황
-                    l
+            let max_child_index: usize = if right_child_index < len {
+                match self.item[right_child_index].cmp(&self.item[left_child_index]) {
+                    // Equal은 어디에 가든 상관없음.
+                    Ordering::Less | Ordering::Equal => right_child_index,
+                    Ordering::Greater => left_child_index,
                 }
-            })(left_child_index, right_child_index);
+            } else {
+                // 오른쪽 자식은 없는 상황
+                left_child_index
+            };
 
             match self.item[max_child_index].cmp(&self.item[current_index]) {
                 Ordering::Less | Ordering::Equal => {
                     self.item.swap(current_index, max_child_index);
                     current_index = max_child_index;
-                },
-                Ordering::Greater => break
+                }
+                Ordering::Greater => break,
             }
         }
     }
 }
 
-impl<T: Ord+Clone+Debug> Heap for MinHeap<T> {
+impl<T: Ord + Clone + Debug> Heap for MinHeap<T> {
     type Item = T;
 
     fn new() -> Self
     where
-        Self: Sized
+        Self: Sized,
     {
-        MinHeap {
-            item: Vec::new()
-        }
+        MinHeap { item: Vec::new() }
     }
 
     /// MinHeap에 새 원소를 추가합니다.
@@ -99,7 +98,7 @@ impl<T: Ord+Clone+Debug> Heap for MinHeap<T> {
             2.. => {
                 let root = &self.item[0].clone();
                 let len = self.len();
-                self.item.swap(0, len-1);
+                self.item.swap(0, len - 1);
                 self.item.pop();
                 self.heapify(0);
                 Some(root.clone())
@@ -108,10 +107,7 @@ impl<T: Ord+Clone+Debug> Heap for MinHeap<T> {
     }
 
     fn peek(&self) -> Option<Self::Item> {
-        match self.item.first() {
-            None => None,
-            Some(root) => Some(root.clone())
-        }
+        self.item.first().cloned()
     }
 
     fn len(&self) -> usize {
@@ -124,7 +120,7 @@ impl<T: Ord+Clone+Debug> Heap for MinHeap<T> {
 
     fn from_vec(vec: Vec<Self::Item>) -> Self
     where
-        Self: Sized
+        Self: Sized,
     {
         let mut init = Self::new();
         init.item = vec;
