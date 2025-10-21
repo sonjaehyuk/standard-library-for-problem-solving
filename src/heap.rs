@@ -137,12 +137,13 @@ pub trait Heap {
             0 => None,
             1 => self.item_mutable().pop(),
             2.. => {
-                let root = &self.item()[0].clone();
+                let root = &self.item()[0];
+                let result = Some(root.clone());
                 let len = self.len();
                 self.item_mutable().swap(0, len - 1);
                 self.item_mutable().pop();
                 self.shift_down();
-                Some(root.clone())
+                result
             }
         }
     }
