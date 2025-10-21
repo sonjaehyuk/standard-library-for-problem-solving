@@ -167,9 +167,16 @@ pub trait Heap {
     }
 
     /// 기존 Vec을 heap으로 만들기
-    fn from_vec(vec: Vec<Self::Item>) -> Self
+    fn from_vec(vec: &[Self::Item]) -> Self
     where
-        Self: Sized;
+        Self: Sized,
+    {
+        let mut init = Self::new();
+        for i in vec {
+            init.push(i.clone())
+        }
+        init
+    }
 
     /// heap tree 구조를 시각적으로 출력
     fn tree_view(&self) {

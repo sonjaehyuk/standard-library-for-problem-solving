@@ -25,16 +25,4 @@ impl<T: Ord + Clone + Debug> Heap for MinHeap<T> {
     fn item(&self) -> &Vec<Self::Item> {
         &self.item
     }
-
-    fn from_vec(vec: Vec<Self::Item>) -> Self
-    where
-        Self: Sized,
-    {
-        let mut init = Self::new();
-        init.item = vec;
-        for i in (0..init.item.len()).rev() {
-            init.shift_down();
-        }
-        init
-    }
 }
