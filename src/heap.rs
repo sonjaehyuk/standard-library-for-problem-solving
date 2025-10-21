@@ -27,7 +27,9 @@ pub trait Heap {
     where
         Self: Sized;
 
-    fn item(&mut self) -> &mut Vec<Self::Item>;
+    fn item_mutable(&mut self) -> &mut Vec<Self::Item>;
+
+    fn item(&self) -> &Vec<Self::Item>;
 
     /// heapify 매개변수 root가 전체 heap에서 자신의 자리를 찾아가도록 하는 연산입니다.
     /// 만약 root의 모든 하위자식들이 heapify를 수행해서 root 미만 Heap 노드 전체가 안정되었다면,
@@ -55,8 +57,7 @@ pub trait Heap {
                 break;
             }
             let max_child_index: usize = if right_child_index < len {
-                let left_chile = self.item()[left_child_index].clone();
-                match self.item()[right_child_index].cmp(&left_chile) {
+                match self.item()[right_child_index].cmp(&self.item()[left_child_index]) {
                     // Equal은 어디에 가든 상관없음.
                     Ordering::Less | Ordering::Equal => match Self::HEAP_TYPE {
                         HeapType::MaxHeap => left_child_index,
@@ -74,18 +75,17 @@ pub trait Heap {
             // 2. 가장 큰 자식과 현재 노드를 비교합니다.
             // MaxHeap에서는 자식이 부모보다 큰 경우 swap을 수행하고 계속 노드 아래로 내려가며 heapify를 수행해야 합니다.
             // 그래야 부모가 자식보다 큰 경우 그 아래까지 heapify가 되었음을 보장할 수 있기 때문입니다.
-            let current = self.item()[current_index].clone();
-            match self.item()[max_child_index].cmp(&current) {
+            match self.item()[max_child_index].cmp(&self.item()[current_index]) {
                 Ordering::Less | Ordering::Equal => match Self::HEAP_TYPE {
                     HeapType::MaxHeap => break,
                     HeapType::MinHeap => {
-                        self.item().swap(current_index, max_child_index);
+                        self.item_mutable().swap(current_index, max_child_index);
                         current_index = max_child_index;
                     }
                 },
                 Ordering::Greater => match Self::HEAP_TYPE {
                     HeapType::MaxHeap => {
-                        self.item().swap(current_index, max_child_index);
+                        self.item_mutable().swap(current_index, max_child_index);
                         current_index = max_child_index;
                     }
                     HeapType::MinHeap => break,
@@ -114,7 +114,7 @@ pub trait Heap {
                     }
                 }
             }
-            self.item().swap(p, i);
+            self.item_mutable().swap(p, i);
             i = p;
         }
     }
@@ -123,10 +123,10 @@ pub trait Heap {
     fn push(&mut self, item: Self::Item) {
         let len: usize = self.len();
         if len < 1 {
-            self.item().push(item);
+            self.item_mutable().push(item);
             return;
         }
-        self.item().push(item);
+        self.item_mutable().push(item);
 
         self.shift_up();
     }
@@ -135,12 +135,12 @@ pub trait Heap {
     fn pop(&mut self) -> Option<Self::Item> {
         match self.item().len() {
             0 => None,
-            1 => self.item().pop(),
+            1 => self.item_mutable().pop(),
             2.. => {
                 let root = &self.item()[0].clone();
                 let len = self.len();
-                self.item().swap(0, len - 1);
-                self.item().pop();
+                self.item_mutable().swap(0, len - 1);
+                self.item_mutable().pop();
                 self.shift_down();
                 Some(root.clone())
             }
@@ -148,22 +148,22 @@ pub trait Heap {
     }
 
     /// 최상단(루트)만 반환. Clone을 사용하므로 메서드 호출한 곳에서 소유권 사용해도 됨.
-    fn peek(&mut self) -> Option<Self::Item> {
+    fn peek(&self) -> Option<Self::Item> {
         self.item().first().cloned()
     }
     /// 원소 개수
-    fn len(&mut self) -> usize {
+    fn len(&self) -> usize {
         self.item().len()
     }
 
     /// 비었는지
-    fn is_empty(&mut self) -> bool {
+    fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
     /// 모두 제거
     fn clear(&mut self) {
-        self.item().clear();
+        self.item_mutable().clear();
     }
 
     /// 기존 Vec을 heap으로 만들기
@@ -172,7 +172,7 @@ pub trait Heap {
         Self: Sized;
 
     /// heap tree 구조를 시각적으로 출력
-    fn tree_view(&mut self) {
+    fn tree_view(&self) {
         let mut result = String::new();
         let len = self.len();
         if len == 0 {

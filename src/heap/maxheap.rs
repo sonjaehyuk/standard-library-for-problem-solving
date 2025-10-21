@@ -1,5 +1,5 @@
 #![allow(clippy::doc_lazy_continuation)]
-use crate::heap::{Heap, HeapType, levels_from_len};
+use crate::heap::{Heap, HeapType};
 use std::fmt::Debug;
 
 /// 최대 힙이란 힙 루트가 가장 값이 큰 자료구조이다.
@@ -18,8 +18,12 @@ impl<T: Ord + Clone + Debug> Heap for MaxHeap<T> {
         MaxHeap { item: Vec::new() }
     }
 
-    fn item(&mut self) -> &mut Vec<Self::Item> {
+    fn item_mutable(&mut self) -> &mut Vec<Self::Item> {
         &mut self.item
+    }
+
+    fn item(&self) -> &Vec<Self::Item> {
+        &self.item
     }
 
     fn from_vec(vec: Vec<Self::Item>) -> Self
