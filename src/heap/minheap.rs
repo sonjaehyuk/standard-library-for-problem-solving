@@ -22,9 +22,9 @@ impl<T: Ord + Clone + Debug> MinHeap<T> {
     /// 그래야 부모가 자식보다 작은 경우 그 아래까지 heapify가 되었음을 보장할 수 있기 때문입니다.
     ///
     /// > heapify를 올바르게 호출하기 위해서는 반드시 root의 모든 하위자식들이 Heap인지 고려해야 합니다.
-    fn heapify(&mut self, root: usize) {
+    fn shift_down(&mut self) {
         let len = self.len();
-        let mut current_index = root;
+        let mut current_index = 0;
         loop {
             let left_child_index = 2 * current_index + 1;
             let right_child_index = 2 * current_index + 2;
@@ -52,6 +52,21 @@ impl<T: Ord + Clone + Debug> MinHeap<T> {
             }
         }
     }
+
+    fn shift_up(&mut self) {
+        let mut i = self.len() - 1;
+        while i > 0 {
+            let p = match i % 2 == 0 {
+                true => (i-2)/2,
+                false => (i-1)/2,
+            };
+            if self.item[p] < self.item[i] {
+                break;
+            }
+            self.item.swap(p, i);
+            i = p;
+        }
+    }
 }
 
 impl<T: Ord + Clone + Debug> Heap for MinHeap<T> {
@@ -71,15 +86,13 @@ impl<T: Ord + Clone + Debug> Heap for MinHeap<T> {
     /// 3. 뒷 인덱스부터 반복문으로 순회하며 아래쪽 노드부터 [`Maxheap::heapify`]를 수행합니다.
     fn push(&mut self, item: Self::Item) {
         let len: usize = self.len();
-        if len <= 1 {
+        if len < 1 {
             self.item.push(item);
             return;
         }
         self.item.push(item);
 
-        for i in (0..len).rev() {
-            self.heapify(i);
-        }
+        self.shift_up();
     }
 
     /// MinHeap의 root를 제거합니다.
@@ -100,7 +113,7 @@ impl<T: Ord + Clone + Debug> Heap for MinHeap<T> {
                 let len = self.len();
                 self.item.swap(0, len - 1);
                 self.item.pop();
-                self.heapify(0);
+                self.shift_down();
                 Some(root.clone())
             }
         }
@@ -125,7 +138,7 @@ impl<T: Ord + Clone + Debug> Heap for MinHeap<T> {
         let mut init = Self::new();
         init.item = vec;
         for i in (0..init.item.len()).rev() {
-            init.heapify(i);
+            init.shift_down();
         }
         init
     }
@@ -141,7 +154,7 @@ impl<T: Ord + Clone + Debug> Heap for MinHeap<T> {
         for i in 0..level {
             let start = (1usize << i) - 1;
             let end = ((1usize << (i + 1)) - 2).min(len.saturating_sub(1));
-            result += "L{i}: ";
+            result += format!("L{i}: ").as_str();
             for i in start..=end {
                 result += format!("{:?} ", self.item[i]).as_str();
             }
