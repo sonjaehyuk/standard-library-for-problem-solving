@@ -1,3 +1,4 @@
+#![allow(clippy::doc_lazy_continuation)]
 mod maxheap;
 pub use maxheap::MaxHeap;
 mod minheap;
@@ -5,6 +6,11 @@ pub use minheap::MinHeap;
 
 use std::cmp::*;
 use std::fmt::Debug;
+
+pub enum HeapType {
+    MaxHeap,
+    MinHeap,
+}
 
 /// # Heap
 /// Heap은 다음 속성을 만족하는 완전이진트리이다.
@@ -14,31 +20,151 @@ use std::fmt::Debug;
 /// * 값의 대소관계는 오로지 부모노드와 자식노드 간에만 성립하며, 특히 형제 사이에는 대소관계가 정해지지 않는다.
 pub trait Heap {
     type Item: Ord + Clone + Debug;
+    const HEAP_TYPE: HeapType;
 
     /// 비어있는 힙 생성
     fn new() -> Self
     where
         Self: Sized;
 
+    fn item(&mut self) -> &mut Vec<Self::Item>;
+
+    /// heapify 매개변수 root가 전체 heap에서 자신의 자리를 찾아가도록 하는 연산입니다.
+    /// 만약 root의 모든 하위자식들이 heapify를 수행해서 root 미만 Heap 노드 전체가 안정되었다면,
+    /// root의 heapify 연산 결과는 root 이하 Heap 노드 전체가 안정됨을 보장할 수 있습니다.
+    /// ## 과정
+    /// 1. 기준 노드의 두 직계 자식 중 값이 더 큰 자식을 고릅니다.
+    /// 자식이 없으면 leaf이므로 그만합니다. 만약 한쪽 자식만 있는 경우 그 한쪽 자식을 사용합니다.
+    /// 2. 가장 큰 자식과 기준 노드를 비교합니다.
+    /// 3. 가장 큰 자식이 부모보다 큰 경우 swap을 수행하고, 기준 노드를 가장 큰 자식으로 하여 새롭게 heapify합니다.
+    /// 4. 가장 큰 자식이 부모보다 작은 경우 Heap이 완성되었다는 의미이므로 그만합니다.
+    /// > MaxHeap에서는 자식이 부모보다 큰 경우 swap을 수행하고 계속 노드 아래로 내려가며 heapify를 수행해야 합니다.
+    /// 그래야 부모가 자식보다 큰 경우 그 아래까지 heapify가 되었음을 보장할 수 있기 때문입니다.
+    ///
+    /// > heapify를 올바르게 호출하기 위해서는 반드시 root의 모든 하위자식들이 Heap인지 고려해야 합니다.
+    fn shift_down(&mut self) {
+        let len = self.len();
+        let mut current_index = 0;
+        loop {
+            // heapify
+            // 1. 자식을 고르고 둘 중 가장 큰 자식을 고릅니다. 자식이 없으면 그만합니다.
+            let left_child_index = 2 * current_index + 1;
+            let right_child_index = 2 * current_index + 2;
+            if left_child_index >= len {
+                // current_index가 leaf인 상황
+                break;
+            }
+            let max_child_index: usize = if right_child_index < len {
+                let left_chile = self.item()[left_child_index].clone();
+                match self.item()[right_child_index].cmp(&left_chile) {
+                    // Equal은 어디에 가든 상관없음.
+                    Ordering::Less | Ordering::Equal => match Self::HEAP_TYPE {
+                        HeapType::MaxHeap => left_child_index,
+                        HeapType::MinHeap => right_child_index,
+                    },
+                    Ordering::Greater => match Self::HEAP_TYPE {
+                        HeapType::MaxHeap => right_child_index,
+                        HeapType::MinHeap => left_child_index,
+                    },
+                }
+            } else {
+                // 오른쪽 자식은 없는 상황
+                left_child_index
+            };
+            // 2. 가장 큰 자식과 현재 노드를 비교합니다.
+            // MaxHeap에서는 자식이 부모보다 큰 경우 swap을 수행하고 계속 노드 아래로 내려가며 heapify를 수행해야 합니다.
+            // 그래야 부모가 자식보다 큰 경우 그 아래까지 heapify가 되었음을 보장할 수 있기 때문입니다.
+            let current = self.item()[current_index].clone();
+            match self.item()[max_child_index].cmp(&current) {
+                Ordering::Less | Ordering::Equal => match Self::HEAP_TYPE {
+                    HeapType::MaxHeap => break,
+                    HeapType::MinHeap => {
+                        self.item().swap(current_index, max_child_index);
+                        current_index = max_child_index;
+                    }
+                },
+                Ordering::Greater => match Self::HEAP_TYPE {
+                    HeapType::MaxHeap => {
+                        self.item().swap(current_index, max_child_index);
+                        current_index = max_child_index;
+                    }
+                    HeapType::MinHeap => break,
+                },
+            }
+        }
+    }
+
+    fn shift_up(&mut self) {
+        let mut i = self.len() - 1;
+        while i > 0 {
+            let p = match i.is_multiple_of(2) {
+                true => (i - 2) / 2,
+                false => (i - 1) / 2,
+            };
+            let current = self.item()[i].clone();
+            match Self::HEAP_TYPE {
+                HeapType::MaxHeap => {
+                    if self.item()[p] >= current {
+                        break;
+                    }
+                }
+                HeapType::MinHeap => {
+                    if self.item()[p] < current {
+                        break;
+                    }
+                }
+            }
+            self.item().swap(p, i);
+            i = p;
+        }
+    }
+
     /// 원소 추가
-    fn push(&mut self, item: Self::Item);
+    fn push(&mut self, item: Self::Item) {
+        let len: usize = self.len();
+        if len < 1 {
+            self.item().push(item);
+            return;
+        }
+        self.item().push(item);
+
+        self.shift_up();
+    }
 
     /// 최상단(루트) 원소 제거+반환
-    fn pop(&mut self) -> Option<Self::Item>;
+    fn pop(&mut self) -> Option<Self::Item> {
+        match self.item().len() {
+            0 => None,
+            1 => self.item().pop(),
+            2.. => {
+                let root = &self.item()[0].clone();
+                let len = self.len();
+                self.item().swap(0, len - 1);
+                self.item().pop();
+                self.shift_down();
+                Some(root.clone())
+            }
+        }
+    }
 
     /// 최상단(루트)만 반환. Clone을 사용하므로 메서드 호출한 곳에서 소유권 사용해도 됨.
-    fn peek(&self) -> Option<Self::Item>;
-
+    fn peek(&mut self) -> Option<Self::Item> {
+        self.item().first().cloned()
+    }
     /// 원소 개수
-    fn len(&self) -> usize;
+    fn len(&mut self) -> usize {
+        self.item().len()
+    }
 
     /// 비었는지
-    fn is_empty(&self) -> bool {
+    fn is_empty(&mut self) -> bool {
         self.len() == 0
     }
 
     /// 모두 제거
-    fn clear(&mut self);
+    fn clear(&mut self) {
+        self.item().clear();
+    }
 
     /// 기존 Vec을 heap으로 만들기
     fn from_vec(vec: Vec<Self::Item>) -> Self
@@ -46,7 +172,25 @@ pub trait Heap {
         Self: Sized;
 
     /// heap tree 구조를 시각적으로 출력
-    fn tree_view(&self);
+    fn tree_view(&mut self) {
+        let mut result = String::new();
+        let len = self.len();
+        if len == 0 {
+            return;
+        }
+
+        let level = levels_from_len(len);
+        for i in 0..level {
+            let start = (1usize << i) - 1;
+            let end = ((1usize << (i + 1)) - 2).min(len.saturating_sub(1));
+            result += format!("L{i}: ").as_str();
+            for i in start..=end {
+                result += format!("{:?} ", self.item()[i]).as_str();
+            }
+            result += "\n";
+        }
+        println!("{result}")
+    }
 }
 
 pub fn levels_from_len(n: usize) -> usize {
